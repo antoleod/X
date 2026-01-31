@@ -1,0 +1,45 @@
+
+<!doctype html><html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="styles.css"/>
+<title>Soustraire V3</title>
+</head>
+<body>
+<header>
+  <a href="index.html">←</a>
+  <strong>Soustraire = Transformer (V3)</strong>
+</header>
+<main>
+<div class="card">
+  <h2 id="eq"></h2>
+  <div class="row" id="A"></div>
+  <div class="row" id="B"></div>
+  <div class="row">
+    <button onclick="transform()">10 → 10×1</button>
+    <button onclick="removeOnes()">− unités</button>
+    <button onclick="removeTens()">− dizaines</button>
+  </div>
+</div>
+</main>
+<script type="module">
+import {t,confetti} from "./app.js";
+let A=61,B=38;
+let aT=6,aO=1,bT=3,bO=8;
+const eq=document.getElementById("eq");
+eq.textContent=`${A} − ${B}`;
+function render(){
+  Adiv.innerHTML="";Bdiv.innerHTML="";
+  for(let i=0;i<aT;i++){Adiv.innerHTML+=`<div class='block ten'>10</div>`}
+  for(let i=0;i<aO;i++){Adiv.innerHTML+=`<div class='block'>1</div>`}
+  for(let i=0;i<bT;i++){Bdiv.innerHTML+=`<div class='block ten'>10</div>`}
+  for(let i=0;i<bO;i++){Bdiv.innerHTML+=`<div class='block'>1</div>`}
+}
+const Adiv=document.getElementById("A");
+const Bdiv=document.getElementById("B");
+window.transform=()=>{if(aT>0){aT--;aO+=10;render()}}
+window.removeOnes=()=>{if(aO>=bO){aO-=bO;render()}}
+window.removeTens=()=>{if(aT>=bT){aT-=bT;render();confetti();alert("="+(aT*10+aO))}}
+render();
+</script>
+</body></html>

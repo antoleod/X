@@ -1,0 +1,64 @@
+
+<!doctype html><html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="styles.css"/>
+<title>Multiplications</title>
+</head>
+<body>
+<header>
+  <a href="index.html">←</a>
+  <strong>Tables de multiplication (2–12)</strong>
+</header>
+<main>
+<div class="card">
+  <p class="small">Choisis une table</p>
+  <div class="row" id="tables"></div>
+</div>
+<div class="card" id="game" style="display:none">
+  <h2 id="q"></h2>
+  <input id="ans" type="number"/>
+  <button class="good" onclick="check()">OK</button>
+</div>
+</main>
+<script type="module">
+import {confetti} from "./app.js";
+import {MULT_TABLES,multExercises} from "./data.js";
+const tablesDiv=document.getElementById("tables");
+const game=document.getElementById("game");
+const q=document.getElementById("q");
+const ans=document.getElementById("ans");
+let current,ex,i=0;
+
+MULT_TABLES.forEach(t=>{
+  const b=document.createElement("button");
+  b.textContent="×"+t;
+  b.onclick=()=>start(t);
+  tablesDiv.appendChild(b);
+});
+
+function start(t){
+  current=t;
+  ex=multExercises(t,1);
+  i=0;
+  game.style.display="block";
+  next();
+}
+function next(){
+  const e=ex[i];
+  q.textContent=`${e.a} × ${e.b} = ?`;
+  ans.value="";
+}
+window.check=()=>{
+  if(Number(ans.value)===ex[i].a*ex[i].b){
+    confetti();
+    i++;
+    if(i<ex.length)next();
+    else alert("✔ Table terminée");
+  }else{
+    ans.classList.add("shake");
+    setTimeout(()=>ans.classList.remove("shake"),300);
+  }
+}
+</script>
+</body></html>

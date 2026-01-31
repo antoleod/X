@@ -1,0 +1,52 @@
+
+<!doctype html><html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="styles.css"/>
+<title>Composer V3</title>
+</head>
+<body>
+<header>
+  <a href="index.html">←</a>
+  <strong>Composer / Décomposer V3</strong>
+</header>
+<main>
+<div class="card">
+  <h2 id="task"></h2>
+  <div class="row" id="tens"></div>
+  <div class="row" id="ones"></div>
+  <div class="row">
+    <button onclick="addTen()">+10</button>
+    <button onclick="addOne()">+1</button>
+    <button onclick="breakTen()">10 → 10×1</button>
+    <button class="good" onclick="check()">OK</button>
+  </div>
+</div>
+</main>
+<script type="module">
+import {t,confetti} from "./app.js";
+let target=47,tens=0,ones=0;
+const task=document.getElementById("task");
+task.textContent=t("Construis 47","Bouw 47");
+
+function render(){
+  document.getElementById("tens").innerHTML="";
+  document.getElementById("ones").innerHTML="";
+  for(let i=0;i<tens;i++){
+    const b=document.createElement("div");b.className="block ten";b.textContent="10";
+    document.getElementById("tens").appendChild(b);
+  }
+  for(let i=0;i<ones;i++){
+    const b=document.createElement("div");b.className="block";b.textContent="1";
+    document.getElementById("ones").appendChild(b);
+  }
+}
+window.addTen=()=>{tens++;render()}
+window.addOne=()=>{ones++;render()}
+window.breakTen=()=>{if(tens>0){tens--;ones+=10;render()}}
+window.check=()=>{
+  if(tens*10+ones===target){confetti();alert("✔")}else{alert("…")}
+}
+render();
+</script>
+</body></html>
