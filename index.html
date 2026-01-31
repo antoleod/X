@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Math Blocks</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+  <div class="bgFX"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="noise"></div></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="badge">🧱 <strong id="appName">Math Blocks</strong> <span class="small" id="tagline">composer • décomposer • soustraire</span></span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="pill alt" id="langBtn" title="FR / NL">FR</button>
+      <button class="pill" id="resetBtn" title="Réinitialiser">Reset</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <h1 id="homeTitle">Apprendre les maths avec des blocs (sans « emprunt ») ✨</h1>
+      <p id="homeLead">
+        Deux jeux : (1) composer/décomposer, (2) soustraire en transformant une dizaine en 10 unités.
+      </p>
+      <p class="small" id="homeTip">Astuce : toi tu guides, l’enfant clique. Compréhension + confiance 🙂</p>
+    </div>
+
+    <div class="grid cols2">
+      <div class="card">
+        <div class="hd">
+          <div>
+            <p class="title" id="g1Title">🧩 Jeu 1 — Construire le nombre</p>
+            <p class="sub" id="g1Sub">10 niveaux · 2 exercices/niveau · transformations 10 ↔ 10×1</p>
+          </div>
+          <span class="tag" id="g1Tag">Compréhension</span>
+        </div>
+        <div class="bd">
+          <div class="progress" id="pbCompose"><div></div></div>
+          <div class="btnrow">
+            <a class="btn primary" href="compose.html" id="g1Enter">Entrer</a>
+            <button class="btn ghost" id="composeHow">Comment jouer ?</button>
+          </div>
+          <div class="helperBox" id="composeHelp" style="display:none;margin-top:12px;">
+            <div class="hint" id="composeHowText">
+              ✅ Un nombre peut avoir plusieurs formes : 61 = 60+1 = 50+11.
+              <br/>✨ Transformer : 1 dizaine = 10 unités (même total).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <div>
+            <p class="title" id="g2Title">➖ Jeu 2 — Soustraire = transformer</p>
+            <p class="sub" id="g2Sub">10 niveaux · 2 exercices/niveau · pas à pas avec blocs</p>
+          </div>
+          <span class="tag warn" id="g2Tag">Blocs</span>
+        </div>
+        <div class="bd">
+          <div class="progress" id="pbSub"><div></div></div>
+          <div class="btnrow">
+            <a class="btn primary" href="subtract.html" id="g2Enter">Entrer</a>
+            <button class="btn ghost" id="subHow">Comment jouer ?</button>
+          </div>
+          <div class="helperBox" id="subHelp" style="display:none;margin-top:12px;">
+            <div class="hint" id="subHowText">
+              ✅ On ne dit pas « emprunter ». On dit : <strong>transformer</strong>.
+              <br/>Ex: 61 − 38 → 61 = 50 + 11 pour pouvoir retirer 8 unités.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="hd">
+        <div>
+          <p class="title" id="teacherTitle">🧠 Mode « prof » (rapide)</p>
+          <p class="sub" id="teacherSub">Phrases courtes pour expliquer sans stress</p>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="grid cols2">
+          <div class="panel">
+            <h3 id="t1">Composer / décomposer</h3>
+            <p id="t1a">« Le nombre ne change pas, c’est sa forme qui change. »</p>
+            <p id="t1b">« 1 dizaine = 10 unités. On peut transformer. »</p>
+          </div>
+          <div class="panel">
+            <h3 id="t2">Soustractions</h3>
+            <p id="t2a">« On ne prête pas : on transforme pour pouvoir retirer. »</p>
+            <p id="t2b">« D’abord les unités, puis les dizaines. »</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { loadProgress, saveProgress, toast, setProgressBar, getLang, setLang, ensureBgFX } from "./js/app.js";
+    import { t } from "./js/i18n.js";
+
+    ensureBgFX();
+
+    const p = loadProgress();
+    const doneCompose = Object.values(p.compose).filter(Boolean).length;
+    const doneSub = Object.values(p.subtract).filter(Boolean).length;
+    setProgressBar("pbCompose", (doneCompose/10)*100);
+    setProgressBar("pbSub", (doneSub/10)*100);
+
+    const composeHow = document.getElementById("composeHow");
+    const composeHelp = document.getElementById("composeHelp");
+    composeHow.addEventListener("click", ()=>{
+      const show = composeHelp.style.display !== "none";
+      composeHelp.style.display = show ? "none" : "block";
+    });
+
+    const subHow = document.getElementById("subHow");
+    const subHelp = document.getElementById("subHelp");
+    subHow.addEventListener("click", ()=>{
+      const show = subHelp.style.display !== "none";
+      subHelp.style.display = show ? "none" : "block";
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", ()=>{
+      saveProgress({compose:{}, subtract:{}});
+      toast(t(getLang(),"progressCleared"), "warn");
+      setTimeout(()=> location.reload(), 350);
+    });
+
+    // Language
+    const langBtn = document.getElementById("langBtn");
+    function applyLang(){
+      const lang = getLang();
+      langBtn.textContent = lang.toUpperCase();
+      document.documentElement.lang = (lang === "nl") ? "nl" : "fr";
+
+      document.getElementById("appName").textContent = t(lang,"appName");
+      document.getElementById("homeTitle").textContent = t(lang,"homeTitle");
+      document.getElementById("homeLead").textContent = t(lang,"homeLead");
+
+      // simple per-language tweaks
+      if(lang==="nl"){
+        document.getElementById("tagline").textContent = "samenstellen • ontbinden • aftrekken";
+        document.getElementById("homeTip").textContent = "Tip: jij begeleidt, het kind klikt. Begrip + vertrouwen 🙂";
+        document.getElementById("g1Title").textContent = "🧩 Spel 1 — Bouw het getal";
+        document.getElementById("g1Sub").textContent = "10 niveaus · 2 oefeningen/niveau · veranderen 10 ↔ 10×1";
+        document.getElementById("g1Tag").textContent = "Inzicht";
+        document.getElementById("g1Enter").textContent = "Start";
+
+        document.getElementById("g2Title").textContent = "➖ Spel 2 — Aftrekken = veranderen";
+        document.getElementById("g2Sub").textContent = "10 niveaus · 2 oefeningen/niveau · stap-voor-stap met blokjes";
+        document.getElementById("g2Tag").textContent = "Blokjes";
+        document.getElementById("g2Enter").textContent = "Start";
+
+        document.getElementById("composeHow").textContent = t(lang,"howPlay");
+        document.getElementById("subHow").textContent = t(lang,"howPlay");
+
+        document.getElementById("composeHowText").innerHTML = "✅ Een getal kan verschillende vormen hebben: 61 = 60+1 = 50+11.<br/>✨ Veranderen: 1 tiental = 10 eenheden (zelfde totaal).";
+        document.getElementById("subHowText").innerHTML = "✅ We zeggen niet ‘lenen’. We zeggen: <strong>veranderen</strong>.<br/>Voorbeeld: 61 − 38 → 61 = 50 + 11 zodat je 8 eenheden kunt wegnemen.";
+        document.getElementById("teacherTitle").textContent = "🧠 ‘Leerkracht’-modus (snel)";
+        document.getElementById("teacherSub").textContent = "Korte zinnen om rustig uit te leggen";
+        document.getElementById("t1").textContent = "Samenstellen / ontbinden";
+        document.getElementById("t1a").textContent = "“Het getal verandert niet, alleen de vorm.”";
+        document.getElementById("t1b").textContent = "“1 tiental = 10 eenheden. We kunnen veranderen.”";
+        document.getElementById("t2").textContent = "Aftrekken";
+        document.getElementById("t2a").textContent = "“We lenen niet: we veranderen om te kunnen wegnemen.”";
+        document.getElementById("t2b").textContent = "“Eerst eenheden, dan tientallen.”";
+      }else{
+        document.getElementById("tagline").textContent = "composer • décomposer • soustraire";
+        document.getElementById("homeTip").textContent = "Astuce : toi tu guides, l’enfant clique. Compréhension + confiance 🙂";
+        document.getElementById("g1Title").textContent = "🧩 Jeu 1 — Construire le nombre";
+        document.getElementById("g1Sub").textContent = "10 niveaux · 2 exercices/niveau · transformations 10 ↔ 10×1";
+        document.getElementById("g1Tag").textContent = "Compréhension";
+        document.getElementById("g1Enter").textContent = "Entrer";
+
+        document.getElementById("g2Title").textContent = "➖ Jeu 2 — Soustraire = transformer";
+        document.getElementById("g2Sub").textContent = "10 niveaux · 2 exercices/niveau · pas à pas avec blocs";
+        document.getElementById("g2Tag").textContent = "Blocs";
+        document.getElementById("g2Enter").textContent = "Entrer";
+
+        document.getElementById("composeHow").textContent = t(lang,"howPlay");
+        document.getElementById("subHow").textContent = t(lang,"howPlay");
+
+        document.getElementById("composeHowText").innerHTML = "✅ Un nombre peut avoir plusieurs formes : 61 = 60+1 = 50+11.<br/>✨ Transformer : 1 dizaine = 10 unités (même total).";
+        document.getElementById("subHowText").innerHTML = "✅ On ne dit pas « emprunter ». On dit : <strong>transformer</strong>.<br/>Ex: 61 − 38 → 61 = 50 + 11 pour pouvoir retirer 8 unités.";
+        document.getElementById("teacherTitle").textContent = "🧠 Mode « prof » (rapide)";
+        document.getElementById("teacherSub").textContent = "Phrases courtes pour expliquer sans stress";
+        document.getElementById("t1").textContent = "Composer / décomposer";
+        document.getElementById("t1a").textContent = "« Le nombre ne change pas, c’est sa forme qui change. »";
+        document.getElementById("t1b").textContent = "« 1 dizaine = 10 unités. On peut transformer. »";
+        document.getElementById("t2").textContent = "Soustractions";
+        document.getElementById("t2a").textContent = "« On ne prête pas : on transforme pour pouvoir retirer. »";
+        document.getElementById("t2b").textContent = "« D’abord les unités, puis les dizaines. »";
+      }
+    }
+
+    langBtn.addEventListener("click", ()=>{
+      const next = (getLang()==="fr") ? "nl" : "fr";
+      setLang(next);
+      applyLang();
+      toast(next==="nl" ? "Taal: NL ✅" : "Langue: FR ✅", "info");
+    });
+
+    applyLang();
+  </script>
+</body>
+</html>

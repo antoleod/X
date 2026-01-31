@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Math Blocks — Construire le nombre</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+  <div class="bgFX"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="noise"></div></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <a class="badge" href="index.html" style="text-decoration:none;">← <span id="menuTxt">Menu</span></a>
+      <span class="badge">🧩 <strong id="titleTxt">Construire le nombre</strong> <span class="small" id="subTxt">10 niveaux • 2 exercices</span></span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="pill alt" id="langBtn" title="FR / NL">FR</button>
+      <button class="pill" id="helpBtn"><span id="helpTxt">Aide</span></button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="hd">
+        <div style="width:100%">
+          <p class="title"><span id="lvlLbl">Niveau</span> <span id="lvlNum">1</span> · <span id="exLbl">Exercice</span> <span id="exNum">1</span>/2</p>
+          <p class="sub" id="taskText"></p>
+          <div class="progress" style="margin-top:10px" id="pb"><div></div></div>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="gameShell">
+          <div class="panel">
+            <div class="eq">
+              <span class="box"><span id="objLbl">Objectif</span> : <span class="bigNumber" id="target">17</span></span>
+              <span class="box"><span id="youLbl">Ton nombre</span> : <span class="bigNumber" id="yours">0</span></span>
+              <span class="tag" id="modeTag">Construire</span>
+            </div>
+
+            <div class="blockStage" style="margin-top:14px;">
+              <div class="blockBin" id="binTens">
+                <h4 id="tensTitle">Dizaines (10)</h4>
+                <div class="blocksRow" id="tensRow"></div>
+              </div>
+              <div class="blockBin" id="binOnes">
+                <h4 id="onesTitle">Unités (1)</h4>
+                <div class="blocksRow" id="onesRow"></div>
+              </div>
+            </div>
+
+            <div class="footerNav">
+              <div class="btnrow" style="margin:0">
+                <button class="btn" id="addTen">+1 dizaine</button>
+                <button class="btn" id="addOne">+1 unité</button>
+                <button class="btn ghost" id="remTen">−1 dizaine</button>
+                <button class="btn ghost" id="remOne">−1 unité</button>
+              </div>
+              <div class="btnrow" style="margin:0">
+                <button class="btn warn" id="breakTen">Transformer 1 dizaine → 10 unités</button>
+                <button class="btn warn" id="groupOnes">Regrouper 10 unités → 1 dizaine</button>
+              </div>
+            </div>
+
+            <div class="btnrow" style="margin-top:14px">
+              <button class="btn good" id="checkBtn">Vérifier ✅</button>
+              <button class="btn primary" id="nextBtn" disabled>Suivant ▶</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3 id="explainHdr">Explication (niveau 1 = super clair)</h3>
+            <p id="kidExplain"></p>
+
+            <div class="helperBox" style="margin-top:12px;">
+              <div class="hint" id="hintText"></div>
+            </div>
+
+            <div class="helperBox" style="margin-top:12px;">
+              <div class="hint" id="proPhrase"></div>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+              <div class="hd">
+                <div>
+                  <p class="title" style="font-size:16px" id="mapHdr">Carte des niveaux</p>
+                  <p class="sub" style="font-size:13px" id="mapSub">Termine dans l’ordre. Progression enregistrée.</p>
+                </div>
+              </div>
+              <div class="bd">
+                <div class="levelMap" id="levelMap"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { COMPOSE_LEVELS } from "./js/data.js";
+    import { loadProgress, saveProgress, toast, confettiBurst, renderBlocks, setProgressBar, splitNumber, clamp, animateShake, getLang, setLang, ensureBgFX, showIntro } from "./js/app.js";
+    import { t } from "./js/i18n.js";
+
+    ensureBgFX();
+
+    const p = loadProgress();
+    let currentLevel = 1;
+    let currentExercise = 0; // 0/1
+
+    const lvlNum = document.getElementById("lvlNum");
+    const exNum = document.getElementById("exNum");
+    const taskText = document.getElementById("taskText");
+    const targetEl = document.getElementById("target");
+    const yoursEl = document.getElementById("yours");
+    const modeTag = document.getElementById("modeTag");
+    const kidExplain = document.getElementById("kidExplain");
+    const hintText = document.getElementById("hintText");
+    const proPhrase = document.getElementById("proPhrase");
+
+    const tensRow = document.getElementById("tensRow");
+    const onesRow = document.getElementById("onesRow");
+
+    const btnAddTen = document.getElementById("addTen");
+    const btnAddOne = document.getElementById("addOne");
+    const btnRemTen = document.getElementById("remTen");
+    const btnRemOne = document.getElementById("remOne");
+    const btnBreakTen = document.getElementById("breakTen");
+    const btnGroupOnes = document.getElementById("groupOnes");
+    const btnCheck = document.getElementById("checkBtn");
+    const btnNext = document.getElementById("nextBtn");
+
+    let tens = 0;
+    let ones = 0;
+
+    // Language
+    const langBtn = document.getElementById("langBtn");
+    function applyLang(){
+      const lang = getLang();
+      langBtn.textContent = lang.toUpperCase();
+      document.documentElement.lang = (lang === "nl") ? "nl" : "fr";
+
+      document.getElementById("menuTxt").textContent = t(lang,"menu");
+      document.getElementById("helpTxt").textContent = t(lang,"help");
+      document.getElementById("lvlLbl").textContent = t(lang,"level");
+      document.getElementById("exLbl").textContent = t(lang,"exercise");
+      document.getElementById("objLbl").textContent = (lang==="nl") ? "Doel" : "Objectif";
+      document.getElementById("youLbl").textContent = (lang==="nl") ? "Jouw getal" : "Ton nombre";
+      document.getElementById("titleTxt").textContent = (lang==="nl") ? "Bouw het getal" : "Construire le nombre";
+      document.getElementById("subTxt").textContent = (lang==="nl") ? "10 niveaus • 2 oefeningen" : "10 niveaux • 2 exercices";
+      document.getElementById("tensTitle").textContent = (lang==="nl") ? "Tientallen (10)" : "Dizaines (10)";
+      document.getElementById("onesTitle").textContent = (lang==="nl") ? "Eenheden (1)" : "Unités (1)";
+
+      btnAddTen.textContent = t(lang,"addTen");
+      btnAddOne.textContent = t(lang,"addOne");
+      btnRemTen.textContent = t(lang,"remTen");
+      btnRemOne.textContent = t(lang,"remOne");
+      btnBreakTen.textContent = t(lang,"transform");
+      btnGroupOnes.textContent = t(lang,"group");
+      btnCheck.textContent = t(lang,"check");
+      btnNext.textContent = t(lang,"next");
+
+      document.getElementById("mapHdr").textContent = (lang==="nl") ? "Niveaukaart" : "Carte des niveaux";
+      document.getElementById("mapSub").textContent = (lang==="nl") ? "Volg de volgorde. Voortgang wordt opgeslagen." : "Termine dans l’ordre. Progression enregistrée.";
+      document.getElementById("explainHdr").textContent = (lang==="nl") ? "Uitleg (niveau 1 = super duidelijk)" : "Explication (niveau 1 = super clair)";
+    }
+    langBtn.addEventListener("click", ()=>{
+      setLang(getLang()==="fr" ? "nl" : "fr");
+      applyLang();
+      toast(getLang()==="nl" ? "Taal: NL ✅" : "Langue: FR ✅", "info");
+      startExercise(); // re-render texts
+    });
+    applyLang();
+
+    function updateBlocks(){
+      renderBlocks({tens, ones, tenRowEl:tensRow, oneRowEl:onesRow});
+      const total = tens*10 + ones;
+      yoursEl.textContent = total;
+      if(total >= 90) document.getElementById("binTens").classList.add("floaty");
+      else document.getElementById("binTens").classList.remove("floaty");
+    }
+
+    function playOk(){
+      confettiBurst(90);
+    }
+
+    function buildLevelMap(){
+      const map = document.getElementById("levelMap");
+      map.innerHTML = "";
+      const maxUnlocked = getMaxUnlocked();
+      for(let i=1;i<=10;i++){
+        const done = !!p.compose["L"+i];
+        const locked = i>maxUnlocked;
+        const b = document.createElement("div");
+        b.className = "levelBtn" + (done ? " done" : "") + (locked ? " locked" : "");
+        const lang = getLang();
+        b.innerHTML = `<div class="n">${t(lang,"level")} ${i}</div><div class="s">${done ? "✅" : "• 2"}</div>`;
+        b.addEventListener("click", ()=>{
+          if(locked){ toast(lang==="nl" ? "Eerst het vorige niveau 🙂" : "Termine le niveau précédent 🙂", "warn"); return; }
+          currentLevel = i; currentExercise = 0;
+          startExercise(true);
+        });
+        map.appendChild(b);
+      }
+    }
+
+    function getMaxUnlocked(){
+      let unlocked = 1;
+      for(let i=1;i<=10;i++){
+        if(p.compose["L"+i]) unlocked = i+1;
+        else break;
+      }
+      return clamp(unlocked, 1, 10);
+    }
+
+    function setHeaderProgress(){
+      const done = Object.values(p.compose).filter(Boolean).length;
+      setProgressBar("pb", (done/10)*100);
+    }
+
+    function resetWorkspaceForExercise(ex){
+      btnNext.disabled = true;
+      tens = 0; ones = 0;
+
+      // start from the number for transform/explore
+      if(ex.type === "decomposeTo" || ex.type === "decomposeAny"){
+        const s = splitNumber(ex.number);
+        tens = s.tens;
+        ones = s.ones;
+      }
+      if(ex.type === "challenge"){
+        const s = splitNumber(ex.target);
+        tens = s.tens;
+        ones = s.ones;
+      }
+      updateBlocks();
+    }
+
+    function explainForExercise(ex){
+      const lang = getLang();
+
+      if(ex.type==="build"){
+        modeTag.textContent = t(lang,"tagBuild");
+        kidExplain.textContent = (lang==="nl")
+          ? "Bouw het getal met tientallen en eenheden. Eerst tientallen, dan eenheden."
+          : "Construis le nombre avec des dizaines et des unités. D’abord les dizaines, puis les unités.";
+        hintText.textContent = (lang==="nl")
+          ? "Tip: zet eerst de tientallen neer, daarna de eenheden."
+          : "Astuce : pose d’abord les dizaines, puis les unités.";
+      }else if(ex.type==="decomposeTo"){
+        modeTag.textContent = t(lang,"tagTransform");
+        kidExplain.textContent = (lang==="nl")
+          ? "Het getal is al gebouwd. Toon hetzelfde getal op een andere manier (door 1 tiental te veranderen in 10 eenheden)."
+          : "Le nombre est déjà construit. Montre le même nombre autrement (en transformant 1 dizaine en 10 unités).";
+        hintText.textContent = (lang==="nl")
+          ? "Tip: verander 1 tiental → 10 eenheden tot de delen kloppen."
+          : "Astuce : transforme 1 dizaine → 10 unités jusqu’à obtenir les bonnes parties.";
+      }else if(ex.type==="decomposeAny"){
+        modeTag.textContent = t(lang,"tagExplore");
+        kidExplain.textContent = (lang==="nl")
+          ? "Zoek meerdere vormen. Het totaal blijft hetzelfde."
+          : "Trouve plusieurs formes. Le total reste le même.";
+        hintText.textContent = (lang==="nl")
+          ? "Bewaar een vorm, verander, en bewaar opnieuw."
+          : "Valide une forme, transforme, puis valide une autre forme.";
+      }else if(ex.type==="mentalJump"){
+        modeTag.textContent = t(lang,"tagJumps");
+        kidExplain.textContent = (lang==="nl")
+          ? "Denk aan sprongen: je telt in stappen (bv. eerst tot een rond tiental)."
+          : "Pense à des sauts : tu ajoutes par étapes (ex: d’abord atteindre une dizaine ronde).";
+        hintText.textContent = (lang==="nl")
+          ? "Maak grote sprongen (tientallen), dan kleine (eenheden)."
+          : "Fais de grands sauts (dizaines), puis des petits (unités).";
+      }else if(ex.type==="challenge"){
+        modeTag.textContent = t(lang,"tagChallenge");
+        kidExplain.textContent = (lang==="nl")
+          ? "Uitdaging: toon meerdere vormen en leg uit waarom het hetzelfde blijft."
+          : "Défi : montre plusieurs formes et explique pourquoi c’est le même nombre.";
+        hintText.textContent = (lang==="nl")
+          ? "Je moet minstens één verandering (10→10×1) gebruiken."
+          : "Tu dois utiliser au moins une transformation (10→10×1).";
+      }
+
+      proPhrase.innerHTML = (lang==="nl")
+        ? "✅ Korte zin: <strong>“Het getal verandert niet, alleen de vorm.”</strong>"
+        : "✅ Phrase courte : <strong>« Le nombre ne change pas, seule la forme change. »</strong>";
+    }
+
+    function startExercise(skipIntro=false){
+      const levelData = COMPOSE_LEVELS.find(x=>x.level===currentLevel);
+      const ex = levelData.exercises[currentExercise];
+      const lang = getLang();
+
+      lvlNum.textContent = currentLevel;
+      exNum.textContent = (currentExercise+1);
+      taskText.textContent = (ex.say && ex.say[lang]) ? ex.say[lang] : "";
+
+      if(ex.type==="build" || ex.type==="challenge"){
+        targetEl.textContent = ex.target;
+      }else if(ex.type==="decomposeTo" || ex.type==="decomposeAny"){
+        targetEl.textContent = ex.number;
+      }else if(ex.type==="mentalJump"){
+        const sum = ex.start + ex.jumps.reduce((a,b)=>a+b,0);
+        targetEl.textContent = sum;
+      }
+
+      explainForExercise(ex);
+      resetWorkspaceForExercise(ex);
+      setHeaderProgress();
+      buildLevelMap();
+      toast(t(lang,"letsGo"), "info");
+
+      // Intro only on Level 1 Exercise 1 (first time)
+      const introKey = "composeIntroShown_v2";
+      if(!skipIntro && currentLevel===1 && currentExercise===0 && !localStorage.getItem(introKey)){
+        localStorage.setItem(introKey, "1");
+        if(lang==="nl"){
+          showIntro(`
+            <h3 style="margin:0 0 8px">Niveau 1 — Zo werkt het</h3>
+            <p><b>1 tiental</b> is <b>10 eenheden</b>. Dat betekent: je kunt het <b>zelfde getal</b> op verschillende manieren tonen.</p>
+            <ul>
+              <li>17 = 10 + 7</li>
+              <li>Als je een tiental verandert: 30 = 20 + 10</li>
+            </ul>
+            <p><b>Belangrijk:</b> we “lenen” niet. We <b>veranderen</b> de vorm zodat het makkelijker wordt.</p>
+            <p>Start nu met <b>+1 tiental</b> en <b>+1 eenheid</b>, en klik daarna op <b>Controleren</b>.</p>
+          `);
+        }else{
+          showIntro(`
+            <h3 style="margin:0 0 8px">Niveau 1 — Comment ça marche</h3>
+            <p><b>1 dizaine</b> vaut <b>10 unités</b>. Donc on peut montrer <b>le même nombre</b> de plusieurs façons.</p>
+            <ul>
+              <li>17 = 10 + 7</li>
+              <li>Si on transforme : 31 = 20 + 11</li>
+            </ul>
+            <p><b>Important :</b> on ne “prête” pas. On <b>transforme</b> la forme pour comprendre.</p>
+            <p>Commence avec <b>+1 dizaine</b> et <b>+1 unité</b>, puis clique <b>Vérifier</b>.</p>
+          `);
+        }
+      }
+    }
+
+    function total(){ return tens*10 + ones; }
+
+    // Buttons
+    btnAddTen.addEventListener("click", ()=>{ tens = clamp(tens+1, 0, 30); updateBlocks(); });
+    btnAddOne.addEventListener("click", ()=>{ ones = clamp(ones+1, 0, 250); updateBlocks(); });
+    btnRemTen.addEventListener("click", ()=>{
+      if(tens<=0){ animateShake(document.getElementById("binTens")); toast(getLang()==="nl" ? "Geen tientallen om te verwijderen" : "Pas de dizaines à retirer", "warn"); return; }
+      tens--; updateBlocks();
+    });
+    btnRemOne.addEventListener("click", ()=>{
+      if(ones<=0){ animateShake(document.getElementById("binOnes")); toast(getLang()==="nl" ? "Geen eenheden om te verwijderen" : "Pas d’unités à retirer", "warn"); return; }
+      ones--; updateBlocks();
+    });
+
+    btnBreakTen.addEventListener("click", ()=>{
+      if(tens<=0){ animateShake(document.getElementById("binTens")); toast(t(getLang(),"needTen"), "warn"); return; }
+      tens -= 1;
+      ones += 10;
+      updateBlocks();
+      toast(getLang()==="nl" ? "Verandering: 10 → 10×1 ✅" : "Transformation : 10 → 10×1 ✅", "info");
+    });
+
+    btnGroupOnes.addEventListener("click", ()=>{
+      if(ones < 10){ animateShake(document.getElementById("binOnes")); toast(t(getLang(),"need10Ones"), "warn"); return; }
+      const groups = Math.floor(ones/10);
+      tens += groups;
+      ones -= groups*10;
+      updateBlocks();
+      toast(getLang()==="nl" ? `Gegroepeerd: ${groups} tiental(len) ✅` : `Regroupé : ${groups} dizaine(s) ✅`, "info");
+    });
+
+    // Exercise checks
+    let seenWays = [];
+    function checkExercise(){
+      const levelData = COMPOSE_LEVELS.find(x=>x.level===currentLevel);
+      const ex = levelData.exercises[currentExercise];
+      const lang = getLang();
+      const tval = total();
+
+      if(ex.type==="build"){
+        if(tval === ex.target){
+          playOk();
+          toast(lang==="nl" ? "Top! Correct ✅" : "Parfait ! ✅", "good");
+          btnNext.disabled = false;
+          return true;
+        }
+        animateShake(document.getElementById("binTens"));
+        toast(lang==="nl" ? "Bijna… controleer tientallen en eenheden" : "Presque… vérifie dizaines et unités", "warn");
+        return false;
+      }
+
+      if(ex.type==="decomposeTo"){
+        const okSame = (tval === ex.number);
+        const okExact = (tens === ex.tens && ones === ex.ones);
+        if(okSame && okExact){
+          playOk();
+          toast(lang==="nl" ? `Goed! ${ex.number} = ${ex.tens*10} + ${ex.ones} ✅` : `Bravo ! ${ex.number} = ${ex.tens*10} + ${ex.ones} ✅`, "good");
+          btnNext.disabled = false;
+          return true;
+        }
+        animateShake(document.getElementById("binOnes"));
+        toast(lang==="nl" ? "Nog niet… zelfde totaal, maar delen moeten kloppen" : "Pas encore… même total, mais les parties doivent correspondre", "warn");
+        return false;
+      }
+
+      if(ex.type==="decomposeAny"){
+        if(tval !== ex.number){
+          animateShake(document.getElementById("binTens"));
+          toast(lang==="nl" ? "Verander het totaal niet 🙂" : "Ne change pas le total 🙂", "warn");
+          return false;
+        }
+        const key = `${tens}T-${ones}O`;
+        if(!seenWays.includes(key)) seenWays.push(key);
+        toast(lang==="nl" ? `Vorm opgeslagen: ${tens*10} + ${ones}. ${seenWays.length}/${ex.minWays}` : `Forme enregistrée : ${tens*10} + ${ones}. ${seenWays.length}/${ex.minWays}`, "info");
+        if(seenWays.length >= ex.minWays){
+          playOk();
+          toast(lang==="nl" ? "Super! Meerdere vormen ✅" : "Super ! Plusieurs formes ✅", "good");
+          btnNext.disabled = false;
+          return true;
+        }
+        return false;
+      }
+
+      if(ex.type==="mentalJump"){
+        const sum = ex.start + ex.jumps.reduce((a,b)=>a+b,0);
+        if(tval === sum){
+          playOk();
+          toast(lang==="nl" ? "Goed! Doel bereikt ✅" : "Bien ! Objectif atteint ✅", "good");
+          btnNext.disabled = false;
+          return true;
+        }
+        animateShake(document.getElementById("binOnes"));
+        toast(lang==="nl" ? "Denk in sprongen (grote tientallen, kleine eenheden)" : "Pense en sauts (grandes dizaines, petites unités)", "warn");
+        return false;
+      }
+
+      if(ex.type==="challenge"){
+        if(tval !== ex.target){
+          animateShake(document.getElementById("binTens"));
+          toast(lang==="nl" ? "Eerst het juiste totaal" : "D’abord le bon total", "warn");
+          return false;
+        }
+        // require at least one transformation evidence: ones>=10 OR tens < standard tens
+        const s = splitNumber(ex.target);
+        const transformed = (ones >= 10) || (tens < s.tens);
+        if(transformed){
+          playOk();
+          toast(lang==="nl" ? "Uitdaging gehaald ✅" : "Défi réussi ✅", "good");
+          btnNext.disabled = false;
+          return true;
+        }
+        toast(lang==="nl" ? "Gebruik minstens één verandering (10→10×1)" : "Utilise au moins une transformation (10→10×1)", "warn");
+        return false;
+      }
+    }
+
+    btnCheck.addEventListener("click", ()=> checkExercise());
+
+    function markLevelIfDone(){
+      if(currentExercise === 1){
+        p.compose["L"+currentLevel] = true;
+        saveProgress(p);
+        buildLevelMap();
+        setHeaderProgress();
+      }
+    }
+
+    btnNext.addEventListener("click", ()=>{
+      btnNext.disabled = true;
+
+      const levelData = COMPOSE_LEVELS.find(x=>x.level===currentLevel);
+      const ex = levelData.exercises[currentExercise];
+      if(ex.type==="decomposeAny") seenWays = [];
+
+      if(currentExercise < 1){
+        currentExercise++;
+        startExercise(true);
+      }else{
+        markLevelIfDone();
+        if(currentLevel < 10){
+          currentLevel++;
+          currentExercise = 0;
+          startExercise(true);
+        }else{
+          confettiBurst(140);
+          toast(getLang()==="nl" ? "Je hebt alles afgerond! 🏆" : "Tu as tout terminé ! 🏆", "good");
+        }
+      }
+    });
+
+    document.getElementById("helpBtn").addEventListener("click", ()=>{
+      toast(getLang()==="nl"
+        ? "Tip: verander 1 tiental → 10 eenheden om een andere vorm te tonen."
+        : "Astuce : transforme 1 dizaine → 10 unités pour montrer une autre forme.", "info");
+    });
+
+    // Start on first not-done level
+    for(let i=1;i<=10;i++){
+      if(!p.compose["L"+i]){ currentLevel=i; break; }
+    }
+    startExercise(false);
+  </script>
+</body>
+</html>
